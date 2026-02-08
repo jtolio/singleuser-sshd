@@ -13,7 +13,8 @@ running in something like [ajail](https://github.com/jtolio/ajail)
 
 ## LLM statement
 
-Gemini 3 wrote almost all this
+Gemini 3 wrote almost all this, but it's < 150 loc, so it's easy
+to review.
 
 ## license
 
