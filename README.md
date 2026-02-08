@@ -2,9 +2,9 @@
 
 This is a basic SSH server that:
 
-a) only allows the user running the server to connect
-b) only allows ssh key authentication
-c) only runs in the foreground
+1. only allows the user running the server to connect
+2. only allows ssh key authentication
+3. only runs in the foreground
 
 it does not support user switching, pam, etc.
 
