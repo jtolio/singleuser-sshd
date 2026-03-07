@@ -14,6 +14,7 @@ import (
 
 	"github.com/creack/pty"
 	"github.com/gliderlabs/ssh"
+	"github.com/pkg/sftp"
 )
 
 func main() {
@@ -35,6 +36,7 @@ func main() {
 	shell := flag.String("shell", defaultShell, "shell to use")
 	password := flag.String("password", "", "If set, enable password authentication with this password")
 	username := flag.String("user", "", "Username to accept for authentication (default: any)")
+	enableSFTP := flag.Bool("sftp", false, "Enable SFTP subsystem for file transfers")
 	flag.Parse()
 
 	s := &ssh.Server{
@@ -70,6 +72,21 @@ func main() {
 			}
 			return false
 		},
+	}
+
+	if *enableSFTP {
+		s.SubsystemHandlers = map[string]ssh.SubsystemHandler{
+			"sftp": func(sess ssh.Session) {
+				server, err := sftp.NewServer(sess)
+				if err != nil {
+					log.Printf("sftp server init error: %v", err)
+					return
+				}
+				if err := server.Serve(); err != io.EOF {
+					log.Printf("sftp server error: %v", err)
+				}
+			},
+		}
 	}
 
 	if *password != "" {
