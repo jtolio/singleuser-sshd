@@ -3,7 +3,7 @@
 This is a basic SSH server that:
 
 1. only allows the user running the server to connect
-2. only allows ssh key authentication
+2. only allows ssh key authentication (unless a password is set)
 3. only runs in the foreground
 
 it does not support user switching, pam, etc.
@@ -13,8 +13,8 @@ running in something like [ajail](https://github.com/jtolio/ajail)
 
 ## LLM statement
 
-Gemini 3 wrote almost all this, but it's < 150 loc, so it's easy
-to review.
+Gemini 3 and Claude wrote almost all this, but it's < 150 loc, so
+it's easy to review.
 
 ## license
 

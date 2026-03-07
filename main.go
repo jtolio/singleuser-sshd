@@ -27,11 +27,11 @@ func main() {
 		defaultShell = "/bin/sh"
 	}
 
-	defaultHostKey := filepath.Join(homeDir, ".ssh", "single_user_host_key")
+	defaultHostKey := filepath.Join(homeDir, ".ssh", "singleuser-sshd-host-key")
 	defaultAuthKeys := filepath.Join(homeDir, ".ssh", "authorized_keys")
 
 	listenAddr := flag.String("addr", ":2222", "Address to listen on")
-	hostKeyFile := flag.String("hostkey", defaultHostKey, "Path to private host key")
+	hostKeyFile := flag.String("hostkey", defaultHostKey, "Path to host key (auto-generated if missing)")
 	authKeysFile := flag.String("authkeys", defaultAuthKeys, "Path to authorized_keys file")
 	shell := flag.String("shell", defaultShell, "shell to use")
 	password := flag.String("password", "", "If set, enable password authentication with this password")
@@ -95,12 +95,17 @@ func main() {
 		}
 	}
 
-	if _, err := os.Stat(*hostKeyFile); err == nil {
-		log.Printf("Using host key: %s", *hostKeyFile)
-		s.SetOption(ssh.HostKeyFile(*hostKeyFile))
+	if _, err := os.Stat(*hostKeyFile); os.IsNotExist(err) {
+		log.Printf("Generating new host key at %s", *hostKeyFile)
+		if err := generateHostKey(*hostKeyFile); err != nil {
+			log.Fatalf("Failed to generate host key: %v", err)
+		}
+	} else if err != nil {
+		log.Fatalf("Failed to stat host key %s: %v", *hostKeyFile, err)
 	} else {
-		log.Printf("Host key not found at %s. Using ephemeral key.", *hostKeyFile)
+		log.Printf("Using host key: %s", *hostKeyFile)
 	}
+	s.SetOption(ssh.HostKeyFile(*hostKeyFile))
 
 	s.Handler = func(s ssh.Session) {
 		if ptyReq, winCh, isPty := s.Pty(); isPty && len(s.Command()) == 0 {
