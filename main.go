@@ -11,11 +11,18 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/creack/pty"
 	"github.com/gliderlabs/ssh"
 	"github.com/pkg/sftp"
 )
+
+type contextKey string
+
+const authMethodKey contextKey = "authMethod"
+
+var connCounter uint64
 
 func main() {
 	homeDir, err := os.UserHomeDir()
@@ -66,6 +73,7 @@ func main() {
 					break
 				}
 				if ssh.KeysEqual(key, allowed) {
+					ctx.SetValue(authMethodKey, "publickey")
 					return true
 				}
 				data = rest
@@ -91,7 +99,11 @@ func main() {
 
 	if *password != "" {
 		s.PasswordHandler = func(ctx ssh.Context, pass string) bool {
-			return (*username == "" || ctx.User() == *username) && pass == *password
+			if (*username == "" || ctx.User() == *username) && pass == *password {
+				ctx.SetValue(authMethodKey, "password")
+				return true
+			}
+			return false
 		}
 	}
 
@@ -108,6 +120,14 @@ func main() {
 	s.SetOption(ssh.HostKeyFile(*hostKeyFile))
 
 	s.Handler = func(s ssh.Session) {
+		connID := atomic.AddUint64(&connCounter, 1)
+		authMethod, _ := s.Context().Value(authMethodKey).(string)
+		if authMethod == "" {
+			authMethod = "unknown"
+		}
+		log.Printf("[conn %d] user %q connected (auth: %s, remote: %s)", connID, s.User(), authMethod, s.RemoteAddr())
+		defer log.Printf("[conn %d] user %q disconnected", connID, s.User())
+
 		if ptyReq, winCh, isPty := s.Pty(); isPty && len(s.Command()) == 0 {
 			cmd := exec.Command(*shell)
 			cmd.Env = append(os.Environ(), fmt.Sprintf("TERM=%s", ptyReq.Term))
