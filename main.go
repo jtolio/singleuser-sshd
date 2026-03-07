@@ -33,6 +33,8 @@ func main() {
 	hostKeyFile := flag.String("hostkey", defaultHostKey, "Path to private host key")
 	authKeysFile := flag.String("authkeys", defaultAuthKeys, "Path to authorized_keys file")
 	shell := flag.String("shell", defaultShell, "shell to use")
+	password := flag.String("password", "", "If set, enable password authentication with this password")
+	username := flag.String("user", "", "Username to accept for authentication (default: any)")
 	flag.Parse()
 
 	s := &ssh.Server{
@@ -48,6 +50,9 @@ func main() {
 		},
 
 		PublicKeyHandler: func(ctx ssh.Context, key ssh.PublicKey) bool {
+			if *username != "" && ctx.User() != *username {
+				return false
+			}
 			data, err := ioutil.ReadFile(*authKeysFile)
 			if err != nil {
 				log.Printf("Auth Error: Could not read %s", *authKeysFile)
@@ -65,6 +70,12 @@ func main() {
 			}
 			return false
 		},
+	}
+
+	if *password != "" {
+		s.PasswordHandler = func(ctx ssh.Context, pass string) bool {
+			return (*username == "" || ctx.User() == *username) && pass == *password
+		}
 	}
 
 	if _, err := os.Stat(*hostKeyFile); err == nil {
