@@ -43,7 +43,7 @@ func main() {
 	shell := flag.String("shell", defaultShell, "shell to use")
 	password := flag.String("password", "", "If set, enable password authentication with this password")
 	username := flag.String("user", "", "Username to accept for authentication (default: any)")
-	enableSFTP := flag.Bool("sftp", false, "Enable SFTP subsystem for file transfers")
+	enableSFTP := flag.Bool("sftp", true, "Enable SFTP subsystem for file transfers")
 	flag.Parse()
 
 	s := &ssh.Server{
